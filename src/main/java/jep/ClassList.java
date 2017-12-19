@@ -159,20 +159,29 @@ public class ClassList implements ClassEnquirer {
         Package[] ps = Package.getPackages();
         for (Package p : ps) {
             String pname = p.getName().replace('.', '/');
-            URL url = cl.getResource(pname);
-
-            if (url == null || !url.getProtocol().equals("file"))
-                continue;
-
-            File dir = null;
             try {
-                dir = new File(url.toURI());
-            } catch (java.net.URISyntaxException e) {
+                Enumeration<URL> urls = cl.getResources(pname);
+
+                while(urls.hasMoreElements()) {
+
+                    URL url = urls.nextElement();
+
+                    if (url == null || !url.getProtocol().equals("file"))
+                        continue;
+
+                    File dir = null;
+                    try {
+                        dir = new File(url.toURI());
+                    } catch (java.net.URISyntaxException e) {
+                        throw new JepException(e);
+                    }
+
+                    for (File classfile : dir.listFiles(new ClassFilenameFilter()))
+                        addClass(p.getName(), stripClassExt(classfile.getName()));
+                }
+            } catch (IOException e) {
                 throw new JepException(e);
             }
-
-            for (File classfile : dir.listFiles(new ClassFilenameFilter()))
-                addClass(p.getName(), stripClassExt(classfile.getName()));
         }
     }
 
